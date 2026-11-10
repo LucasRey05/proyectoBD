@@ -5,6 +5,7 @@ ffmpeg y los sirven desde un servidor HTTP local.
 """
 
 import functools
+import os
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
 import app as servidor_web  # noqa: E402
+import descargas as modulo_descargas  # noqa: E402
 from descargas import (  # noqa: E402
     ErrorDescarga,
     _formato_video,
@@ -93,6 +95,52 @@ class FormatoVideoTests(unittest.TestCase):
         self.assertIn("[height<=720]", formato)
         self.assertNotIn("1080", formato)
         self.assertTrue(formato.endswith("/b"))
+
+
+class MensajesDeErrorTests(unittest.TestCase):
+    """Mensajes traducidos a partir de errores de yt-dlp. No necesitan red."""
+
+    def test_verificacion_anti_bots_pide_cookies(self):
+        msg = modulo_descargas._mensaje_para("ERROR: [youtube] abc: Sign in to confirm you're not a bot.")
+        self.assertIn("anti-bots", msg)
+
+    def test_video_privado_no_se_confunde_con_login(self):
+        msg = modulo_descargas._mensaje_para(
+            "ERROR: [youtube] abc: Private video. Sign in if you've been granted access to this video."
+        )
+        self.assertIn("privado", msg)
+
+    def test_requiere_login_por_edad(self):
+        msg = modulo_descargas._mensaje_para("ERROR: [youtube] abc: Sign in to confirm your age.")
+        self.assertIn("iniciar sesión", msg)
+
+    def test_error_desconocido_usa_mensaje_generico(self):
+        msg = modulo_descargas._mensaje_para("ERROR: Unsupported URL: https://example.com")
+        self.assertEqual(msg, modulo_descargas.MENSAJE_ERROR_GENERICO)
+
+    def test_obtener_info_traduce_error_de_bot(self):
+        from yt_dlp.utils import DownloadError
+
+        with mock.patch.object(modulo_descargas.yt_dlp, "YoutubeDL") as ydl:
+            ydl.return_value.__enter__.return_value.extract_info.side_effect = DownloadError(
+                "ERROR: [youtube] abc: Sign in to confirm you're not a bot."
+            )
+            with self.assertRaises(ErrorDescarga) as contexto:
+                obtener_info("https://www.youtube.com/watch?v=abc")
+        self.assertIn("anti-bots", str(contexto.exception))
+
+    def test_cookies_solo_si_el_archivo_existe(self):
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as archivo:
+            ruta = archivo.name
+        try:
+            with mock.patch.dict(os.environ, {"YTDLP_COOKIES": ruta}):
+                self.assertEqual(modulo_descargas._opciones_base().get("cookiefile"), ruta)
+            with mock.patch.dict(os.environ, {"YTDLP_COOKIES": "/no/existe/cookies.txt"}):
+                self.assertNotIn("cookiefile", modulo_descargas._opciones_base())
+            with mock.patch.dict(os.environ, {}, clear=True):
+                self.assertNotIn("cookiefile", modulo_descargas._opciones_base())
+        finally:
+            os.remove(ruta)
 
 
 class ServidorLocalMixin:

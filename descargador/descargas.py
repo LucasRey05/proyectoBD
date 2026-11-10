@@ -2,6 +2,7 @@
 el video (MP4) o solo el audio (MP3) usando yt-dlp."""
 
 import logging
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -33,6 +34,25 @@ class ErrorDescarga(Exception):
     """Error con un mensaje pensado para mostrarle al usuario."""
 
 
+def _mensaje_para(error):
+    """Traduce el error de yt-dlp a un mensaje que el usuario pueda entender."""
+    texto = str(error).lower()
+    if "not a bot" in texto:
+        return (
+            "YouTube pidió verificación anti-bots desde el servidor. "
+            "Hace falta configurar cookies de sesión (ver el README)."
+        )
+    # Antes que el login: el mensaje de video privado también dice "Sign in".
+    if any(p in texto for p in ("private video", "video unavailable", "has been removed", "does not exist")):
+        return "Ese video es privado, fue borrado o no está disponible."
+    if any(p in texto for p in ("sign in", "log in", "login")):
+        return (
+            "Ese contenido requiere iniciar sesión (por ejemplo, por edad). "
+            "Hace falta configurar cookies de sesión (ver el README)."
+        )
+    return MENSAJE_ERROR_GENERICO
+
+
 def validar_url(url):
     """Devuelve el link limpio o lanza ValueError si no es de una red permitida."""
     if not isinstance(url, str) or not url.strip():
@@ -50,7 +70,7 @@ def validar_url(url):
 
 
 def _opciones_base():
-    return {
+    opciones = {
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
@@ -58,6 +78,11 @@ def _opciones_base():
         "socket_timeout": 30,
         "retries": 3,
     }
+    # Cookies de una sesión (formato Netscape). Opcional: sin la variable, no cambia nada.
+    ruta_cookies = os.environ.get("YTDLP_COOKIES")
+    if ruta_cookies and Path(ruta_cookies).is_file():
+        opciones["cookiefile"] = ruta_cookies
+    return opciones
 
 
 def _alturas_disponibles(formatos):
@@ -77,7 +102,7 @@ def obtener_info(url):
             info = ydl.extract_info(url, download=False)
     except YoutubeDLError as e:
         log.warning("No se pudo leer %s: %s", url, e)
-        raise ErrorDescarga(MENSAJE_ERROR_GENERICO) from e
+        raise ErrorDescarga(_mensaje_para(e)) from e
 
     if not info:
         raise ErrorDescarga(MENSAJE_ERROR_GENERICO)
@@ -143,7 +168,7 @@ def descargar(url, tipo="video", altura=None):
     except YoutubeDLError as e:
         shutil.rmtree(carpeta, ignore_errors=True)
         log.warning("Falló la descarga de %s: %s", url, e)
-        raise ErrorDescarga(MENSAJE_ERROR_GENERICO) from e
+        raise ErrorDescarga(_mensaje_para(e)) from e
 
     archivos = [p for p in carpeta.iterdir() if p.suffix == extension]
     if not archivos:

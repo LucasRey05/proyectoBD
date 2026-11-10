@@ -82,6 +82,18 @@ python -m unittest discover -s tests -v
 
 Las pruebas no necesitan internet: generan videos de muestra con ffmpeg y los sirven desde un servidor local. Si ffmpeg no está instalado, las pruebas de descarga se saltean.
 
+## YouTube y cookies
+
+YouTube pide verificación "no soy un bot" a los servidores en la nube. Cuando pasa, la página te dice que hacen falta cookies. Para configurarlas:
+
+1. En tu navegador, con la sesión iniciada en YouTube, exportá las cookies de `youtube.com` en formato Netscape (`cookies.txt`). Hay extensiones como "Get cookies.txt LOCALLY".
+2. En Render, abrí tu servicio → **Environment** → **Secret Files** y creá el archivo `/etc/secrets/cookies.txt` con el contenido exportado.
+3. En **Environment**, agregá la variable `YTDLP_COOKIES` con el valor `/etc/secrets/cookies.txt`. Render vuelve a desplegar solo.
+
+Para probarlo en tu PC, en PowerShell: `$env:YTDLP_COOKIES="ruta\al\cookies.txt"` y después `python app.py`.
+
+Las cookies dan acceso a tu cuenta. Usá una cuenta secundaria si podés, no las subas al repo y renovalas cuando YouTube vuelva a fallar.
+
 ## Notas
 
 - Solo acepta links de `x.com`, `twitter.com`, `instagram.com`, `tiktok.com`, `youtube.com` y `youtu.be`. Cualquier otro dominio se rechaza antes de hacer ninguna petición.
