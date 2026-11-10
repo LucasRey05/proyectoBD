@@ -14,7 +14,14 @@ log = logging.getLogger("descargador")
 
 # Solo se aceptan links de estas redes. Cualquier otro dominio se rechaza
 # antes de hacer ninguna petición.
-DOMINIOS_PERMITIDOS = ("twitter.com", "x.com", "instagram.com", "tiktok.com")
+DOMINIOS_PERMITIDOS = (
+    "twitter.com",
+    "x.com",
+    "instagram.com",
+    "tiktok.com",
+    "youtube.com",
+    "youtu.be",
+)
 
 MENSAJE_ERROR_GENERICO = (
     "No pude obtener el video de ese link. Puede ser privado, que ya no exista "
@@ -38,7 +45,7 @@ def validar_url(url):
         raise ValueError("El link tiene que empezar con https://")
     host = partes.hostname.lower()
     if not any(host == d or host.endswith("." + d) for d in DOMINIOS_PERMITIDOS):
-        raise ValueError("Solo acepto links de Twitter/X, Instagram o TikTok.")
+        raise ValueError("Solo acepto links de X/Twitter, Instagram, TikTok o YouTube.")
     return url
 
 

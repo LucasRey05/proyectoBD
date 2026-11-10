@@ -49,6 +49,10 @@ class ValidarUrlTests(unittest.TestCase):
             "https://www.instagram.com/reel/AbC123/",
             "https://www.tiktok.com/@usuario/video/123456",
             "https://vm.tiktok.com/ZMabc123/",
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://youtu.be/dQw4w9WgXcQ",
+            "https://www.youtube.com/shorts/abcDEF12345",
+            "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
             "  https://x.com/a/status/1  ",
         ]
         for url in validos:

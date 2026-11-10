@@ -84,7 +84,8 @@ Las pruebas no necesitan internet: generan videos de muestra con ffmpeg y los si
 
 ## Notas
 
-- Solo acepta links de `x.com`, `twitter.com`, `instagram.com` y `tiktok.com`. Cualquier otro dominio se rechaza antes de hacer ninguna petición.
+- Solo acepta links de `x.com`, `twitter.com`, `instagram.com`, `tiktok.com`, `youtube.com` y `youtu.be`. Cualquier otro dominio se rechaza antes de hacer ninguna petición.
+- YouTube suele pedir verificación "no soy un bot" a los servidores en la nube. Si los links de YouTube fallan desde Render pero andan en tu PC, esa es la causa más probable.
 - Las plataformas cambian seguido y yt-dlp se queda atrás. Si algo deja de funcionar, actualizalo con `pip install -U yt-dlp`.
 - Instagram y X a veces piden sesión para ciertos contenidos. Los videos privados o restringidos no se pueden bajar.
 - Los archivos se guardan en carpetas temporales y se borran cuando termina la descarga.
