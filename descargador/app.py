@@ -1,11 +1,15 @@
 import os
 import shutil
+from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from descargas import ErrorDescarga, descargar, obtener_info, validar_url
 
-app = Flask(__name__)
+# La página vive en public/: es la misma carpeta que sirve Firebase Hosting.
+PUBLIC = Path(__file__).resolve().parent / "public"
+
+app = Flask(__name__, static_folder=None)
 
 ALTURA_MIN = 144
 ALTURA_MAX = 4320
@@ -23,7 +27,7 @@ def _leer_json():
 
 @app.get("/")
 def inicio():
-    return render_template("index.html")
+    return send_from_directory(PUBLIC, "index.html")
 
 
 @app.post("/api/info")

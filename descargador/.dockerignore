@@ -1,0 +1,12 @@
+.git
+__pycache__
+*.pyc
+venv/
+.venv/
+*.log
+tests/
+README.md
+firebase.json
+deploy.sh
+.gitignore
+.dockerignore
