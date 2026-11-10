@@ -43,14 +43,14 @@ Firebase no puede correr el backend en su plan gratuito, porque Cloud Run y Clou
    ```
    https://descargador-video-2026.web.app,https://descargador-video-2026.firebaseapp.com
    ```
-5. Creá el servicio. Cuando termine, Render muestra la URL, algo como `https://descargador-api.onrender.com`.
+5. Creá el servicio. Cuando termine, Render muestra la URL del servicio, que termina en `.onrender.com`. Puede llevar un sufijo si el nombre ya está en uso. Ponela en la meta del paso 2.
 
 ### 2. Apuntar la página al backend
 
 En `public/index.html`, poné esa URL en la meta `api-base`:
 
 ```html
-<meta name="api-base" content="https://descargador-api.onrender.com">
+<meta name="api-base" content="https://descargador-api-p6fk.onrender.com">
 ```
 
 Hacelo antes del paso 3, y subí el cambio a la rama (`git add`, `git commit`, `git push`).
