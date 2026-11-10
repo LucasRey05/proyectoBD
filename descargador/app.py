@@ -11,6 +11,25 @@ PUBLIC = Path(__file__).resolve().parent / "public"
 
 app = Flask(__name__, static_folder=None)
 
+# Orígenes que pueden llamar a la API desde otro dominio (por ejemplo, Firebase Hosting).
+# Se configuran con CORS_ORIGINS, separados por comas. Vacío = solo el mismo origen.
+ORIGENES_PERMITIDOS = {
+    o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()
+}
+
+
+@app.after_request
+def _cors(respuesta):
+    origen = request.headers.get("Origin")
+    if origen in ORIGENES_PERMITIDOS and request.path.startswith("/api/"):
+        respuesta.headers["Access-Control-Allow-Origin"] = origen
+        respuesta.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        respuesta.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        # Sin esto el navegador no deja leer el nombre del archivo al descargar.
+        respuesta.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+        respuesta.headers["Vary"] = "Origin"
+    return respuesta
+
 ALTURA_MIN = 144
 ALTURA_MAX = 4320
 

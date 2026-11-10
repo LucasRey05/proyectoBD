@@ -21,31 +21,58 @@ Abrí http://127.0.0.1:5000 en el navegador.
 
 Para cambiar host o puerto: `HOST=0.0.0.0 PORT=8080 python app.py`.
 
-## Desplegar en Firebase
+## Desplegar gratis
 
-La página va a Firebase Hosting (carpeta `public/`) y el backend a Cloud Run, un contenedor con Python y ffmpeg. Hosting reenvía `/api/**` al backend, así que la página y la API quedan bajo el mismo dominio. No usamos Cloud Functions porque su runtime no trae ffmpeg, y yt-dlp lo necesita.
+Todo el despliegue usa planes gratuitos y no pide tarjeta:
 
-Requisitos, una sola vez:
+- **Página:** Firebase Hosting, plan Spark. Sirve la carpeta `public/`.
+- **Backend:** Render, plan Free, usando el `Dockerfile` de esta carpeta (ya incluye ffmpeg).
 
-1. Crear un proyecto en la [consola de Firebase](https://console.firebase.google.com) y pasarlo al plan Blaze (pago por uso). Cloud Run y Cloud Build lo exigen. Tiene cuota gratuita, pero pide tarjeta.
-2. Instalar las herramientas: `npm install -g firebase-tools` y el [Google Cloud SDK](https://cloud.google.com/sdk/docs/install).
-3. Iniciar sesión: `gcloud auth login` y `firebase login`.
+Firebase no puede correr el backend en su plan gratuito, porque Cloud Run y Cloud Functions exigen el plan Blaze. Por eso el backend va en Render y la página de Firebase llama a esa URL.
 
-Desplegar:
+### 1. Backend en Render
 
-```bash
-cd descargador
-PROYECTO=tu-proyecto-firebase ./deploy.sh
+1. Creá una cuenta en [render.com](https://render.com), entrando con GitHub.
+2. Elegí **New → Web Service → Build and deploy from a Git repository** y seleccioná `LucasRey05/proyectoBD`.
+3. Configurá:
+   - **Branch:** `claude/laughing-galileo-q7as2h`
+   - **Root Directory:** `descargador`
+   - **Runtime:** Docker
+   - **Instance Type:** Free
+4. En **Environment**, agregá la variable `CORS_ORIGINS` con el valor:
+   ```
+   https://descargador-video-2026.web.app,https://descargador-video-2026.firebaseapp.com
+   ```
+5. Creá el servicio. Cuando termine, Render muestra la URL, algo como `https://descargador-api.onrender.com`.
+
+### 2. Apuntar la página al backend
+
+En `public/index.html`, poné esa URL en la meta `api-base`:
+
+```html
+<meta name="api-base" content="https://descargador-api.onrender.com">
 ```
 
-El script ejecuta `gcloud run deploy` (backend con 2 GiB de memoria, timeout de 300 s y hasta 3 instancias) y después `firebase deploy --only hosting`.
+Hacelo antes del paso 3, y subí el cambio a la rama (`git add`, `git commit`, `git push`).
 
-Notas:
+### 3. Página en Firebase Hosting
 
-- La región por defecto es `southamerica-east1`. Si la cambiás con `REGION=...`, cambiá también `region` en `firebase.json`.
-- Cloud Run guarda `/tmp` en memoria, por eso el límite de memoria. Un video grande ocupa bastante.
-- Instagram y TikTok pueden bloquear IPs de datacenter, como las de Google Cloud. Si un link funciona en tu PC pero no en la nube, esa es la causa más probable.
-- `firebase emulators:start --only hosting` sirve la página para probarla, pero la ruta `/api` solo funciona desplegada.
+Desde la carpeta `descargador`:
+
+```powershell
+firebase deploy --only hosting --project descargador-video-2026
+```
+
+El link queda en **https://descargador-video-2026.web.app**.
+
+### Notas
+
+- El plan Free de Render se apaga después de unos 15 minutos sin uso. La primera descarga después de eso tarda más, aproximadamente 30 a 60 segundos.
+- Render Free tiene 512 MB de RAM. Alcanza para reels y TikToks cortos. Videos largos o en alta calidad pueden fallar.
+- No verifiqué el tiempo máximo de conexión de Render. Si los videos largos se cortan, ese es el primer punto a revisar.
+- Instagram y TikTok pueden bloquear IPs de servidores en la nube. Si un link funciona en tu PC y en Render no, esa es la causa más probable.
+- Si cambiás el dominio de la página, actualizá `CORS_ORIGINS` en Render.
+- Cloud Run (Google) también puede correr este backend sin costo dentro de su cuota gratuita, pero exige el plan Blaze con tarjeta. El `Dockerfile` sirve para ambos.
 
 ## Pruebas
 
@@ -61,15 +88,13 @@ Las pruebas no necesitan internet: generan videos de muestra con ffmpeg y los si
 - Las plataformas cambian seguido y yt-dlp se queda atrás. Si algo deja de funcionar, actualizalo con `pip install -U yt-dlp`.
 - Instagram y X a veces piden sesión para ciertos contenidos. Los videos privados o restringidos no se pueden bajar.
 - Los archivos se guardan en carpetas temporales y se borran cuando termina la descarga.
-- Para uso fuera de tu computadora, corré la app con un servidor WSGI con hilos (por ejemplo `gunicorn --threads 4 app:app`) en vez de `python app.py`.
 - Usala solo con contenido propio o con permiso. Respetá los derechos de autor y los términos de cada plataforma.
 
 ## Estructura
 
-- `app.py`: rutas Flask (`/`, `/api/info`, `/api/descargar`).
+- `app.py`: rutas Flask (`/`, `/api/info`, `/api/descargar`) y CORS configurable con `CORS_ORIGINS`.
 - `descargas.py`: validación de links, lectura de calidades y descarga con yt-dlp.
-- `public/index.html`: la página (HTML, CSS y JS sin dependencias). La sirve Firebase Hosting, y Flask cuando corre en local.
+- `public/index.html`: la página (HTML, CSS y JS sin dependencias). La sirve Firebase Hosting, y Flask en local.
 - `tests/test_descargas.py`: pruebas.
-- `Dockerfile`: imagen del backend para Cloud Run (Python, ffmpeg y gunicorn).
-- `firebase.json`: Hosting sirve `public/` y reenvía `/api/**` a Cloud Run.
-- `deploy.sh`: despliega el backend y la página.
+- `Dockerfile`: imagen del backend (Python, ffmpeg y gunicorn). La usa Render.
+- `firebase.json`: Hosting sirve `public/`.

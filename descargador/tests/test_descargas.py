@@ -254,6 +254,37 @@ class ApiWebTests(unittest.TestCase):
         self.assertEqual(respuesta.status_code, 422)
         self.assertEqual(respuesta.get_json()["error"], "sin ffmpeg")
 
+    def test_cors_solo_para_origenes_permitidos(self):
+        with mock.patch.object(servidor_web, "ORIGENES_PERMITIDOS", {"https://app.web.app"}):
+            permitido = self.cliente.post(
+                "/api/info", json={"url": "https://evil.com/x"},
+                headers={"Origin": "https://app.web.app"},
+            )
+            ajeno = self.cliente.post(
+                "/api/info", json={"url": "https://evil.com/x"},
+                headers={"Origin": "https://otro-sitio.com"},
+            )
+        self.assertEqual(permitido.headers.get("Access-Control-Allow-Origin"), "https://app.web.app")
+        self.assertIsNone(ajeno.headers.get("Access-Control-Allow-Origin"))
+
+    def test_cors_preflight_expone_content_disposition(self):
+        with mock.patch.object(servidor_web, "ORIGENES_PERMITIDOS", {"https://app.web.app"}):
+            respuesta = self.cliente.open(
+                "/api/descargar", method="OPTIONS",
+                headers={"Origin": "https://app.web.app", "Access-Control-Request-Method": "POST"},
+            )
+        self.assertEqual(respuesta.headers.get("Access-Control-Allow-Origin"), "https://app.web.app")
+        self.assertIn("POST", respuesta.headers.get("Access-Control-Allow-Methods", ""))
+        self.assertIn("Content-Disposition", respuesta.headers.get("Access-Control-Expose-Headers", ""))
+
+    def test_sin_origenes_configurados_no_hay_cors(self):
+        with mock.patch.object(servidor_web, "ORIGENES_PERMITIDOS", set()):
+            respuesta = self.cliente.post(
+                "/api/info", json={"url": "https://evil.com/x"},
+                headers={"Origin": "https://app.web.app"},
+            )
+        self.assertIsNone(respuesta.headers.get("Access-Control-Allow-Origin"))
+
     @staticmethod
     def _archivo_falso():
         carpeta = Path(tempfile.mkdtemp(prefix="descarga_test_"))

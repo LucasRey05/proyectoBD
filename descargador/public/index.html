@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- URL del backend. Vacía si la página la sirve el mismo backend (uso local). -->
+  <meta name="api-base" content="">
   <title>Descargador de videos</title>
   <style>
     :root {
@@ -131,6 +133,9 @@
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
+      const API_BASE = document
+        .querySelector('meta[name="api-base"]')
+        .content.replace(/\/+$/, "");
       const formulario = $("formulario");
       const campoUrl = $("url");
       const botonBuscar = $("buscar");
@@ -226,7 +231,7 @@
         ocupado(true);
 
         try {
-          const respuesta = await fetch("/api/info", {
+          const respuesta = await fetch(`${API_BASE}/api/info`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url }),
@@ -256,7 +261,7 @@
         );
 
         try {
-          const respuesta = await fetch("/api/descargar", {
+          const respuesta = await fetch(`${API_BASE}/api/descargar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: urlActual, tipo, altura: calidad.value }),
