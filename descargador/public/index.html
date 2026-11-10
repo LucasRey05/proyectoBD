@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- URL del backend. Vacía si la página la sirve el mismo backend (uso local). -->
-  <meta name="api-base" content="">
+  <!-- URL del backend en Render. En local se ignora: la página usa el mismo servidor. -->
+  <meta name="api-base" content="https://descargador-api.onrender.com">
   <title>Descargador de videos</title>
   <style>
     :root {
@@ -133,9 +133,11 @@
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
-      const API_BASE = document
-        .querySelector('meta[name="api-base"]')
-        .content.replace(/\/+$/, "");
+      // En local, la página y la API están en el mismo servidor. Publicada, la API está en la meta.
+      const esLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+      const API_BASE = esLocal
+        ? ""
+        : document.querySelector('meta[name="api-base"]').content.replace(/\/+$/, "");
       const formulario = $("formulario");
       const campoUrl = $("url");
       const botonBuscar = $("buscar");
