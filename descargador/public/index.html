@@ -197,6 +197,23 @@
         }
       }
 
+      // Si el navegador no recibe respuesta (backend apagado, dormido o bloqueado por CORS),
+      // fetch rechaza con un TypeError genérico ("Load failed" en Safari). Lo cambiamos por un mensaje útil.
+      async function pedirAlServidor(ruta, cuerpo) {
+        try {
+          return await fetch(`${API_BASE}${ruta}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cuerpo),
+          });
+        } catch {
+          throw new Error(
+            "No pude conectar con el servidor. Revisá que el backend de Render esté activo " +
+              "(puede tardar un minuto si estaba dormido) y volvé a intentar."
+          );
+        }
+      }
+
       function llenarCalidades(alturas) {
         calidad.replaceChildren();
         calidad.add(new Option("Mejor calidad disponible", "mejor"));
@@ -233,11 +250,7 @@
         ocupado(true);
 
         try {
-          const respuesta = await fetch(`${API_BASE}/api/info`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url }),
-          });
+          const respuesta = await pedirAlServidor("/api/info", { url });
           if (!respuesta.ok) {
             throw new Error((await leerError(respuesta)) || "No se pudo leer el link.");
           }
@@ -263,10 +276,10 @@
         );
 
         try {
-          const respuesta = await fetch(`${API_BASE}/api/descargar`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: urlActual, tipo, altura: calidad.value }),
+          const respuesta = await pedirAlServidor("/api/descargar", {
+            url: urlActual,
+            tipo,
+            altura: calidad.value,
           });
           if (!respuesta.ok) {
             throw new Error((await leerError(respuesta)) || "No se pudo descargar el archivo.");
