@@ -1,0 +1,14 @@
+# Blueprint de Render: backend de descargador (plan gratuito, con el Dockerfile de descargador/).
+services:
+  - type: web
+    name: descargador-api
+    runtime: docker
+    branch: claude/laughing-galileo-q7as2h
+    plan: free
+    region: oregon
+    dockerContext: ./descargador
+    dockerfilePath: ./descargador/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: CORS_ORIGINS
+        value: https://descargador-video-2026.web.app,https://descargador-video-2026.firebaseapp.com
